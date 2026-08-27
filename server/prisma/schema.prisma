@@ -1,0 +1,31 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Color {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  hexCode   String   @map("hex_code")
+  sortOrder Int      @map("sort_order")
+  clients   Client[]
+
+  @@map("colors")
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  fullName  String   @map("full_name")
+  cpf       String   @unique
+  email     String   @unique
+  notes     String?
+  colorId   String   @map("color_id")
+  color     Color    @relation(fields: [colorId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("clients")
+}
