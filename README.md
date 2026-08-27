@@ -90,9 +90,13 @@ cadastro (e-mail, nome, cor, observações).
 
 ## API
 
+Documentação interativa (Swagger UI): `http://localhost:3333/docs`
+Especificação OpenAPI em JSON: `http://localhost:3333/openapi.json`
+
 | Método | Rota            | Descrição |
 |--------|-----------------|-----------|
 | GET    | `/health`       | Healthcheck |
+| GET    | `/docs`         | Swagger UI |
 | GET    | `/api/colors`   | Lista as cores disponíveis para o formulário |
 | POST   | `/api/clients`  | Cria um cadastro de cliente |
 
