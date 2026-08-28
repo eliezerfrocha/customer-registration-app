@@ -38,10 +38,7 @@ export const openApiDocument = {
     description: "Repositório, especificação e instruções de setup",
     url: "https://github.com/eliezerfrocha/customer-registration-app",
   },
-  servers: [
-    { url: "http://localhost:3333", description: "Desenvolvimento local" },
-    { url: "/", description: "Mesma origem do host atual" },
-  ],
+  servers: [{ url: "/", description: "Mesma origem do host atual (local ou produção)" }],
   tags: [
     { name: "Health", description: "Status operacional da API" },
     { name: "Colors", description: "Cores disponíveis para o formulário de cadastro" },
