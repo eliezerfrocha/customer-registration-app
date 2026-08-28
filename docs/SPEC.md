@@ -55,6 +55,11 @@ Premissas assumidas conscientemente:
    formulário público de cadastro. Um painel de administração para o John
    Doe consultar os cadastros não foi pedido explicitamente e fica como
    próximo passo natural (ver `README.md`, seção "Próximos passos").
+   Foi adicionado apenas o endpoint `GET /api/clients` (listagem crua, sem
+   interface) para permitir consulta dos cadastros — como ainda não há
+   autenticação, essa rota expõe dados pessoais (CPF, e-mail) sem proteção
+   e não deve ser exposta publicamente em produção sem antes adicionar
+   autenticação.
 5. **Hospedagem**: o Docker Compose incluso sobe API + banco + frontend
    localmente e serve de base para deploy em qualquer serviço de contêineres
    (Railway, Render, Fly.io, ECS, etc.). O provisionamento de um serviço

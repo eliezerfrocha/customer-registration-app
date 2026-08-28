@@ -45,6 +45,22 @@ export const openApiDocument = {
       },
     },
     "/api/clients": {
+      get: {
+        tags: ["Clients"],
+        summary: "Lista os clientes cadastrados",
+        description:
+          "Retorna todos os cadastros, mais recentes primeiro. Endpoint sem autenticação neste escopo — expõe dados pessoais (CPF, e-mail), avaliar proteção antes de ir para produção.",
+        responses: {
+          "200": {
+            description: "Lista de clientes cadastrados",
+            content: {
+              "application/json": {
+                schema: { type: "array", items: { $ref: "#/components/schemas/Client" } },
+              },
+            },
+          },
+        },
+      },
       post: {
         tags: ["Clients"],
         summary: "Cadastra um cliente",

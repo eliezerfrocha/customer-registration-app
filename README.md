@@ -98,7 +98,12 @@ Especificação OpenAPI em JSON: `http://localhost:3333/openapi.json`
 | GET    | `/health`       | Healthcheck |
 | GET    | `/docs`         | Swagger UI |
 | GET    | `/api/colors`   | Lista as cores disponíveis para o formulário |
+| GET    | `/api/clients`  | Lista os clientes cadastrados (mais recentes primeiro) |
 | POST   | `/api/clients`  | Cria um cadastro de cliente |
+
+> **Atenção:** `GET /api/clients` não tem autenticação neste escopo (o teste
+> não pediu área administrativa) e expõe dados pessoais (CPF, e-mail). Antes
+> de expor essa rota publicamente em produção, adicione autenticação.
 
 `POST /api/clients` — corpo esperado:
 

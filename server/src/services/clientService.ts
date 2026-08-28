@@ -4,6 +4,13 @@ import { HttpError } from "../middlewares/errorHandler";
 import { onlyDigits } from "../utils/cpf";
 import { CreateClientInput } from "../validators/clientSchema";
 
+export async function listClients() {
+  return prisma.client.findMany({
+    include: { color: true },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
 export async function createClient(input: CreateClientInput) {
   const cpf = onlyDigits(input.cpf);
 
