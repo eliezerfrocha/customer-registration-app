@@ -22,7 +22,20 @@ export function createApp() {
     res.json({ status: "ok" });
   });
 
-  app.use("/docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+  app.use(
+    "/docs",
+    swaggerUi.serve,
+    swaggerUi.setup(openApiDocument, {
+      customSiteTitle: "Customer Registration API — Docs",
+      swaggerOptions: {
+        docExpansion: "list",
+        filter: true,
+        persistAuthorization: true,
+        displayRequestDuration: true,
+        tagsSorter: "alpha",
+      },
+    }),
+  );
   app.get("/openapi.json", (_req, res) => {
     res.json(openApiDocument);
   });
