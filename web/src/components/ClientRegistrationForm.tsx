@@ -31,6 +31,7 @@ export function ClientRegistrationForm({ onColorPreview }: ClientRegistrationFor
   const [fieldErrors, setFieldErrors] = useState<ClientFormErrors>({});
   const [status, setStatus] = useState<SubmissionStatus>({ type: "idle" });
   const [shake, setShake] = useState(false);
+  const [honeypot, setHoneypot] = useState("");
   const formRef = useRef<HTMLFormElement>(null);
 
   const isSubmitting = status.type === "submitting";
@@ -82,6 +83,7 @@ export function ClientRegistrationForm({ onColorPreview }: ClientRegistrationFor
         email: form.email,
         colorId: form.colorId,
         notes: form.notes || undefined,
+        website: honeypot,
       });
       setStatus({ type: "success" });
     } catch (error) {
@@ -134,6 +136,19 @@ export function ClientRegistrationForm({ onColorPreview }: ClientRegistrationFor
       noValidate
       className={shake ? "shake" : undefined}
     >
+      <div className="honeypot-field" aria-hidden="true">
+        <label htmlFor="website">Não preencha este campo</label>
+        <input
+          id="website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={honeypot}
+          onChange={(e) => setHoneypot(e.target.value)}
+        />
+      </div>
+
       <div className="field-grid">
         <div className="field">
           <label htmlFor="fullName">
@@ -215,17 +230,10 @@ export function ClientRegistrationForm({ onColorPreview }: ClientRegistrationFor
             invalid={Boolean(fieldErrors.colorId)}
             describedBy={fieldErrors.colorId ? "colorId-error" : undefined}
           />
-          {fieldErrors.colorId ? (
+          {fieldErrors.colorId && (
             <span className="field-error" id="colorId-error">
               {fieldErrors.colorId}
             </span>
-          ) : (
-            selectedColor && (
-              <span className="color-feedback">
-                <span className="color-dot" style={{ backgroundColor: selectedColor.hexCode }} />
-                Cor selecionada: <strong>{selectedColor.name}</strong>
-              </span>
-            )
           )}
         </div>
 

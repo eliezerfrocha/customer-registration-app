@@ -1,4 +1,4 @@
-import { CSSProperties, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { CSSProperties, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Color } from "../types";
 import { ChevronDownIcon } from "./icons";
@@ -25,14 +25,21 @@ export function ColorSelect({
   describedBy,
 }: ColorSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState("");
   const [activeIndex, setActiveIndex] = useState(0);
   const [panelStyle, setPanelStyle] = useState<CSSProperties>({});
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const listRef = useRef<HTMLUListElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
 
-  const selectedIndex = colors.findIndex((color) => color.id === value);
-  const selected = colors[selectedIndex];
+  const selected = colors.find((color) => color.id === value);
+
+  const filteredColors = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (!normalizedQuery) return colors;
+    return colors.filter((color) => color.name.toLowerCase().includes(normalizedQuery));
+  }, [colors, query]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -40,7 +47,7 @@ export function ColorSelect({
       if (
         rootRef.current &&
         !rootRef.current.contains(target) &&
-        !listRef.current?.contains(target)
+        !panelRef.current?.contains(target)
       ) {
         setIsOpen(false);
       }
@@ -64,8 +71,10 @@ export function ColorSelect({
     }
 
     updatePosition();
-    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
-    listRef.current?.focus();
+    setQuery("");
+    const initialIndex = colors.findIndex((color) => color.id === value);
+    setActiveIndex(initialIndex >= 0 ? initialIndex : 0);
+    searchRef.current?.focus();
 
     window.addEventListener("resize", updatePosition);
     window.addEventListener("scroll", updatePosition, true);
@@ -73,17 +82,29 @@ export function ColorSelect({
       window.removeEventListener("resize", updatePosition);
       window.removeEventListener("scroll", updatePosition, true);
     };
-  }, [isOpen, selectedIndex]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+    panelRef.current
+      ?.querySelector<HTMLElement>('[data-active="true"]')
+      ?.scrollIntoView({ block: "nearest" });
+  }, [query]);
 
   function openList() {
     if (disabled || isLoading || colors.length === 0) return;
     setIsOpen(true);
   }
 
-  function selectColor(color: Color) {
-    onChange(color.id);
+  function closeList() {
     setIsOpen(false);
     triggerRef.current?.focus();
+  }
+
+  function selectColor(color: Color) {
+    onChange(color.id);
+    closeList();
   }
 
   function handleTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
@@ -93,25 +114,26 @@ export function ColorSelect({
     }
   }
 
-  function handleListKeyDown(event: KeyboardEvent<HTMLUListElement>) {
+  function handleSearchKeyDown(event: KeyboardEvent<HTMLInputElement>) {
     switch (event.key) {
       case "ArrowDown":
         event.preventDefault();
-        setActiveIndex((i) => Math.min(i + 1, colors.length - 1));
+        setActiveIndex((i) => Math.min(i + 1, filteredColors.length - 1));
         break;
       case "ArrowUp":
         event.preventDefault();
         setActiveIndex((i) => Math.max(i - 1, 0));
         break;
       case "Enter":
-      case " ":
         event.preventDefault();
-        if (colors[activeIndex]) selectColor(colors[activeIndex]);
+        if (filteredColors[activeIndex]) selectColor(filteredColors[activeIndex]);
         break;
       case "Escape":
         event.preventDefault();
+        closeList();
+        break;
+      case "Tab":
         setIsOpen(false);
-        triggerRef.current?.focus();
         break;
     }
   }
@@ -150,31 +172,41 @@ export function ColorSelect({
 
       {isOpen &&
         createPortal(
-          <ul
-            className="select-panel"
-            style={panelStyle}
-            role="listbox"
-            tabIndex={-1}
-            onKeyDown={handleListKeyDown}
-            ref={listRef}
-          >
-            {colors.map((color, index) => (
-              <li
-                key={color.id}
-                role="option"
-                aria-selected={color.id === value}
-                data-active={index === activeIndex}
-                className={`select-option${index === activeIndex ? " active" : ""}${
-                  color.id === value ? " selected" : ""
-                }`}
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => selectColor(color)}
-              >
-                <span className="color-dot" style={{ backgroundColor: color.hexCode }} />
-                {color.name}
-              </li>
-            ))}
-          </ul>,
+          <div className="select-panel" style={panelStyle} ref={panelRef}>
+            <input
+              ref={searchRef}
+              type="text"
+              className="select-search"
+              placeholder="Buscar cor..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              aria-label="Buscar cor"
+              autoComplete="off"
+            />
+            <ul className="select-options" role="listbox">
+              {filteredColors.length === 0 ? (
+                <li className="select-empty">Nenhuma cor encontrada.</li>
+              ) : (
+                filteredColors.map((color, index) => (
+                  <li
+                    key={color.id}
+                    role="option"
+                    aria-selected={color.id === value}
+                    data-active={index === activeIndex}
+                    className={`select-option${index === activeIndex ? " active" : ""}${
+                      color.id === value ? " selected" : ""
+                    }`}
+                    onMouseEnter={() => setActiveIndex(index)}
+                    onClick={() => selectColor(color)}
+                  >
+                    <span className="color-dot" style={{ backgroundColor: color.hexCode }} />
+                    {color.name}
+                  </li>
+                ))
+              )}
+            </ul>
+          </div>,
           document.body,
         )}
     </div>

@@ -65,6 +65,15 @@ body {
   font-size: 0.95rem;
 }
 
+.honeypot-field {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* Fields */
 .field-grid {
   display: grid;
@@ -149,15 +158,6 @@ textarea {
   min-height: 80px;
 }
 
-.color-feedback {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 0.8rem;
-  color: #6b7280;
-  animation: field-error-enter 0.2s ease both;
-}
-
 /* Color dot (used in the select and the success chip) */
 .color-dot {
   width: 14px;
@@ -226,17 +226,35 @@ textarea {
 .select-panel {
   position: fixed;
   z-index: 100;
-  margin: 0;
-  padding: 6px;
-  list-style: none;
+  display: flex;
+  flex-direction: column;
   background: #fff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.15);
-  max-height: 220px;
-  overflow-y: auto;
-  outline: none;
+  overflow: hidden;
   animation: select-panel-enter 0.15s ease both;
+}
+
+.select-search {
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  border-radius: 0;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+
+.select-search:focus {
+  border-color: #e5e7eb;
+  box-shadow: none;
+}
+
+.select-options {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 .select-option {
@@ -256,6 +274,13 @@ textarea {
 .select-option.selected {
   font-weight: 600;
   color: #111827;
+}
+
+.select-empty {
+  padding: 14px 10px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: #9ca3af;
 }
 
 /* Buttons */
