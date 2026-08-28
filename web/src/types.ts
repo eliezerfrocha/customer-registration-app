@@ -11,6 +11,8 @@ export interface ClientRegistrationInput {
   email: string;
   colorId: string;
   notes?: string;
+  /** Honeypot: must stay empty. Real users never see or fill this field. */
+  website?: string;
 }
 
 export interface ApiErrorResponse {

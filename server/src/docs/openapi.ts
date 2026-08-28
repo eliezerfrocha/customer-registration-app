@@ -121,7 +121,8 @@ export const openApiDocument = {
         description:
           "Cria um novo cadastro. CPF e e-mail são únicos: enviar um valor já cadastrado " +
           "resulta em `409 Conflict` — é assim que se garante que cada cliente só se " +
-          "cadastra uma vez.",
+          "cadastra uma vez. Limitado a 5 requisições por IP a cada 15 minutos " +
+          "(`429 Too Many Requests` ao exceder).",
         security: [],
         requestBody: {
           required: true,
@@ -157,6 +158,15 @@ export const openApiDocument = {
               "application/json": {
                 schema: { $ref: "#/components/schemas/ErrorResponse" },
                 examples: { duplicateCpf: { $ref: "#/components/examples/ConflictErrorExample" } },
+              },
+            },
+          },
+          "429": {
+            description: "Limite de 5 requisições a cada 15 minutos por IP excedido.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ErrorResponse" },
+                examples: { rateLimited: { $ref: "#/components/examples/RateLimitedErrorExample" } },
               },
             },
           },
@@ -318,6 +328,10 @@ export const openApiDocument = {
       ConflictErrorExample: {
         summary: "CPF já cadastrado",
         value: { message: "Já existe um cadastro com esse CPF." },
+      },
+      RateLimitedErrorExample: {
+        summary: "Limite de requisições excedido",
+        value: { message: "Muitas tentativas de cadastro. Tente novamente em alguns minutos." },
       },
     },
   },

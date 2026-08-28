@@ -60,7 +60,11 @@ Premissas assumidas conscientemente:
    autenticação, essa rota expõe dados pessoais (CPF, e-mail) sem proteção
    e não deve ser exposta publicamente em produção sem antes adicionar
    autenticação.
-5. **Hospedagem**: o Docker Compose incluso sobe API + banco + frontend
+5. **Anti-abuso no formulário público**: mesmo sem autenticação de usuário,
+   `POST /api/clients` tem rate limiting por IP (5 req/15min) e um campo
+   honeypot (`website`, invisível para pessoas reais) que descarta
+   silenciosamente submissões de bots. Ver `README.md`, seção "Segurança".
+6. **Hospedagem**: o Docker Compose incluso sobe API + banco + frontend
    localmente e serve de base para deploy em qualquer serviço de contêineres
    (Railway, Render, Fly.io, ECS, etc.). O provisionamento de um serviço
    terceirizado específico não faz parte deste entregável.

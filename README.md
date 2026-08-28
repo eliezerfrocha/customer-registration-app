@@ -105,6 +105,23 @@ Especificação OpenAPI em JSON: `http://localhost:3333/openapi.json`
 > não pediu área administrativa) e expõe dados pessoais (CPF, e-mail). Antes
 > de expor essa rota publicamente em produção, adicione autenticação.
 
+## Segurança (formulário público)
+
+Mesmo sem exigir login do cliente final, o `POST /api/clients` tem duas
+camadas de proteção contra abuso:
+
+- **Rate limiting** por IP: 5 tentativas de cadastro a cada 15 minutos
+  (`GET /api/clients` tem limite mais permissivo, 30/15min). Ao estourar,
+  a API responde `429` com `Retry-After` nos headers.
+- **Honeypot**: o formulário envia um campo `website`, invisível para
+  pessoas reais (escondido via CSS, fora da ordem de tabulação). Bots que
+  preenchem tudo automaticamente costumam preencher esse campo também — se
+  vier preenchido, a API responde `201` de forma "normal" mas **não grava
+  nada no banco**, para não ensinar o bot a evitar o campo.
+
+Nenhuma das duas exige CAPTCHA nem afeta a experiência de quem preenche o
+formulário normalmente.
+
 `POST /api/clients` — corpo esperado:
 
 ```json
