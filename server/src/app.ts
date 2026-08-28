@@ -11,8 +11,7 @@ export function createApp() {
   const app = express();
 
   if (process.env.NODE_ENV === "production") {
-    // Behind a reverse proxy (Docker/Nginx, load balancer), trust the first
-    // hop's X-Forwarded-For so rate limiting sees the real client IP.
+    // Trust the first proxy hop so rate limiting sees the real client IP.
     app.set("trust proxy", 1);
   }
 

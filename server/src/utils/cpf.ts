@@ -2,11 +2,7 @@ export function onlyDigits(value: string): string {
   return value.replace(/\D/g, "");
 }
 
-/**
- * Valida um CPF verificando os dígitos verificadores (algoritmo oficial).
- * Rejeita CPFs com todos os dígitos iguais (ex: 000.000.000-00), que
- * passariam no cálculo mas são inválidos na prática.
- */
+// Rejeita CPFs com todos os dígitos iguais: passam no cálculo do dígito verificador mas são inválidos na prática.
 export function isValidCpf(rawCpf: string): boolean {
   const cpf = onlyDigits(rawCpf);
 

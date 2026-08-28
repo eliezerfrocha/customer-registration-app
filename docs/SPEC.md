@@ -13,93 +13,79 @@ requisitos extraídos dele antes de qualquer decisão técnica.
 |----|-----------|
 | RF01 | O sistema deve exibir um formulário público de cadastro de cliente. |
 | RF02 | O formulário deve coletar: nome completo, CPF, e-mail, cor preferida e observações. |
-| RF03 | A cor preferida deve ser escolhida entre as cores do arco-íris, apresentadas como uma lista carregada do backend (não fixa no front), pois o próprio cliente avisou que a lista pode mudar. |
+| RF03 | A cor preferida deve ser escolhida entre as cores do arco-íris, apresentadas como uma lista carregada do backend (não fixa no front), pois o cliente avisou que a lista pode mudar. |
 | RF04 | Observações é um campo de texto livre e opcional. |
 | RF05 | Um mesmo cliente deve conseguir se cadastrar apenas uma vez. |
 | RF06 | Ao enviar o formulário, o usuário deve receber feedback claro de sucesso ou de falha (e o motivo, quando aplicável). |
 | RF07 | Dados inválidos (CPF, e-mail) devem ser rejeitados com mensagem de erro compreensível. |
 
-## 3. Requisitos não funcionais / decisões de projeto
+## 3. Requisitos não funcionais
 
 - **Stack obrigatória**: TypeScript, React e Node.js (definida no enunciado do teste).
-- **Banco de dados**: PostgreSQL, por indicação do "Jorge" (citado no relato) — decisão do cliente, não questionada aqui.
-- **Empacotamento**: a aplicação deve ser conteinerizável (Docker), já que o
-  cliente pretende hospedar a "imagem" em um serviço terceirizado.
+- **Banco de dados**: PostgreSQL, por indicação do "Jorge" citado no relato.
+- **Empacotamento**: a aplicação precisa ser conteinerizável, já que o cliente
+  pretende hospedar a "imagem" em um serviço terceirizado.
 - **Continuidade**: o cliente pretende dar sequência ao projeto com outra
-  equipe futuramente. Por isso: código organizado em camadas, migrations
-  versionadas (Prisma), variáveis de ambiente documentadas (`.env.example`)
-  e este documento de especificação — para reduzir a curva de entrada de
-  quem assumir o projeto depois.
+  equipe. Por isso a organização em camadas, as migrations versionadas e este
+  documento existem — para reduzir a curva de entrada de quem assumir o
+  projeto depois.
 
-## 4. Decisões de design e premissas assumidas
+## 4. Premissas assumidas
 
-O relato do cliente é informal e alguns pontos não são 100% explícitos.
-Premissas assumidas conscientemente:
+O relato do cliente é informal e alguns pontos não são 100% explícitos. Estas
+foram as interpretações adotadas:
 
-1. **"Cadastrar uma única vez"** → interpretado como *unicidade por CPF*
-   (identificador único de pessoa física no Brasil). Uma segunda tentativa
-   de cadastro com o mesmo CPF é rejeitada com HTTP 409 e mensagem
-   explicativa. O e-mail também é único, por ser outro identificador natural
-   do cliente e para evitar cadastros duplicados por e-mail divergente de CPF.
-   > Não há autenticação de usuário no escopo descrito (é um formulário
-   > público, sem menção a login), então "uma única vez" não pode ser
-   > garantido por sessão/usuário — a unicidade fica a cargo do CPF.
-2. **Cores do arco-íris** → modeladas como uma tabela própria (`Color`) no
-   banco, populada via *seed*, e servidas por um endpoint (`GET /api/colors`)
-   em vez de uma lista fixa no front-end. Isso atende diretamente ao aviso do
-   cliente de que a lista de cores pode mudar no futuro, sem exigir deploy do
-   front-end para alterar as opções.
-3. **CPF** é validado tanto em formato quanto em dígito verificador
-   (algoritmo oficial), para evitar dados inválidos no banco.
-4. **Sem autenticação/admin** neste escopo: o teste descreve apenas o
-   formulário público de cadastro. Um painel de administração para o John
-   Doe consultar os cadastros não foi pedido explicitamente e fica como
-   próximo passo natural (ver `README.md`, seção "Próximos passos").
-   Foi adicionado apenas o endpoint `GET /api/clients` (listagem crua, sem
-   interface) para permitir consulta dos cadastros — como ainda não há
-   autenticação, essa rota expõe dados pessoais (CPF, e-mail) sem proteção
-   e não deve ser exposta publicamente em produção sem antes adicionar
-   autenticação.
-5. **Anti-abuso no formulário público**: mesmo sem autenticação de usuário,
-   `POST /api/clients` tem rate limiting por IP (5 req/15min) e um campo
-   honeypot (`website`, invisível para pessoas reais) que descarta
-   silenciosamente submissões de bots. Ver `README.md`, seção "Segurança".
+1. **"Cadastrar uma única vez"** foi implementado como unicidade de CPF e
+   e-mail no banco — não existe autenticação/sessão no escopo descrito (é um
+   formulário público, sem menção a login), então a unicidade só pode ser
+   garantida pelo próprio dado. Uma segunda tentativa com o mesmo CPF ou
+   e-mail é rejeitada com `409`.
+2. **Cores do arco-íris** viraram uma tabela (`colors`) populada por seed e
+   servida via `GET /api/colors`, em vez de uma lista fixa no frontend —
+   atende diretamente ao aviso do cliente de que a lista pode mudar, sem
+   exigir novo deploy do front para isso.
+3. **CPF** é validado pelo dígito verificador oficial, não só pelo formato.
+4. **Sem autenticação/admin** neste escopo — o teste descreve apenas o
+   formulário público. Foi adicionado um endpoint de listagem crua
+   (`GET /api/clients`, sem interface) para permitir consulta dos cadastros;
+   como ainda não há autenticação, essa rota expõe CPF e e-mail e não deve
+   ficar pública em produção sem adicionar autenticação antes.
+5. **Anti-abuso sem exigir login**: rate limiting por IP e um honeypot no
+   `POST /api/clients` reduzem spam de bot no formulário público sem
+   introduzir fricção (CAPTCHA, cadastro de usuário) para quem preenche de
+   verdade. Detalhes no README.
 6. **Hospedagem**: o Docker Compose incluso sobe API + banco + frontend
-   localmente e serve de base para deploy em qualquer serviço de contêineres
-   (Railway, Render, Fly.io, ECS, etc.). O provisionamento de um serviço
-   terceirizado específico não faz parte deste entregável.
+   localmente e serve de base para deploy em qualquer serviço de contêineres.
+   O provisionamento de um serviço terceirizado específico não fazia parte
+   deste entregável originalmente — o deploy efetivo está documentado no
+   README quando existir.
 
-## 5. Modelo de dados (visão geral)
+## 5. Modelo de dados
 
 ```
-Color
-- id
-- name        (ex: "Vermelho")
-- hex_code     (ex: "#FF0000")
-- sort_order   (posição no arco-íris)
+colors
+- id          uuid, pk
+- name        text, único        (ex.: "Vermelho")
+- hex_code    text                (ex.: "#E53935")
+- sort_order  int                 posição no arco-íris
 
-Client
-- id
-- full_name
-- cpf          (único, armazenado apenas com dígitos)
-- email        (único)
-- color_id     (FK -> Color)
-- notes        (opcional)
-- created_at
+clients
+- id          uuid, pk
+- full_name   text
+- cpf         text, único         (somente dígitos)
+- email       text, único
+- color_id    uuid, fk -> colors
+- notes       text, opcional
+- created_at  timestamp
 ```
 
-## 6. API (contrato)
+O contrato completo da API (rotas, payloads, códigos de erro) vive na
+especificação OpenAPI servida pela própria aplicação em `/docs` — é a fonte
+da verdade porque é gerada a partir do código, então não pode ficar
+desatualizada em relação a ele. Ver README para como rodar o projeto.
 
-- `GET /api/colors` → lista de cores disponíveis para o `<select>` do formulário.
-- `POST /api/clients` → cria um cadastro de cliente.
-  - `201 Created` + dados do cliente criado.
-  - `400 Bad Request` → payload inválido (CPF/e-mail malformado, campos obrigatórios ausentes).
-  - `409 Conflict` → CPF ou e-mail já cadastrado.
-- `GET /health` → healthcheck (uso operacional/infra).
-
-## 7. Fora de escopo (explicitamente)
+## 6. Fora de escopo
 
 - Autenticação e área administrativa.
 - Edição/exclusão de cadastros.
 - Envio de e-mail de confirmação.
-- Provisionamento efetivo do serviço de hospedagem terceirizado.

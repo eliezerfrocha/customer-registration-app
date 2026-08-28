@@ -1,11 +1,11 @@
 # Customer Registration App
 
-Formulário público de cadastro de clientes, com nome completo, CPF, e-mail,
-cor preferida (arco-íris) e observações — desenvolvido em Node.js,
-TypeScript, React e PostgreSQL.
+Formulário público de cadastro de clientes — nome completo, CPF, e-mail, cor
+preferida (arco-íris) e observações — em Node.js, TypeScript, React e
+PostgreSQL.
 
-A especificação completa (requisitos, decisões e premissas assumidas a
-partir do relato informal do cliente) está em [`docs/SPEC.md`](docs/SPEC.md).
+A análise de requisitos e as decisões de projeto (por que a unicidade é por
+CPF, por que as cores vêm do banco, etc.) estão em [`docs/SPEC.md`](docs/SPEC.md).
 
 ## Stack
 
@@ -17,145 +17,120 @@ partir do relato informal do cliente) está em [`docs/SPEC.md`](docs/SPEC.md).
 | Infra    | Docker + Docker Compose |
 | Testes   | Vitest |
 
-## Estrutura do repositório
+## Estrutura
 
 ```
 .
-├── docs/
-│   └── SPEC.md          # Especificação e decisões de projeto
-├── server/               # API (Node.js + TypeScript + Prisma)
-│   ├── prisma/           # Schema e migrations
+├── docs/SPEC.md          # Requisitos e decisões de projeto
+├── server/                # API
+│   ├── prisma/            # Schema e migrations
 │   └── src/
-├── web/                  # Frontend (React + TypeScript + Vite)
+├── web/                   # Frontend
 │   └── src/
-└── docker-compose.yml    # Orquestra API + banco + frontend
+└── docker-compose.yml     # API + banco + frontend
 ```
 
-## Rodando com Docker (recomendado)
-
-Pré-requisitos: Docker e Docker Compose.
+## Rodando com Docker
 
 ```bash
 cp .env.example .env
 docker compose up --build
 ```
 
-Isso sobe três serviços:
+Sobe três serviços: `db` (Postgres 16, volume persistente), `api` (aplica as
+migrations ao iniciar, `http://localhost:3333`) e `web` (build estático
+servido via Nginx, `http://localhost:5173`).
 
-- **db** — PostgreSQL 16, com volume persistente.
-- **api** — aplica as migrations automaticamente ao iniciar e expõe a API em `http://localhost:3333`.
-- **web** — build estático do frontend servido via Nginx em `http://localhost:5173`.
-
-Depois de subir, popule a lista de cores (uma vez):
+Na primeira vez, popule as cores:
 
 ```bash
 docker compose exec api npm run prisma:seed
 ```
 
-Acesse `http://localhost:5173` e preencha o formulário.
-
 ## Rodando localmente (sem Docker)
 
-Pré-requisitos: Node.js 20+, PostgreSQL rodando localmente.
-
-**Backend**
+Requer Node.js 20+ e um PostgreSQL acessível.
 
 ```bash
+# backend
 cd server
-cp .env.example .env   # ajuste DATABASE_URL se necessário
+cp .env.example .env      # ajuste DATABASE_URL se necessário
 npm install
 npm run prisma:migrate:dev
 npm run prisma:seed
-npm run dev             # http://localhost:3333
-```
+npm run dev                # http://localhost:3333
 
-**Frontend** (em outro terminal)
-
-```bash
+# frontend, em outro terminal
 cd web
 cp .env.example .env
 npm install
-npm run dev              # http://localhost:5173
+npm run dev                 # http://localhost:5173
 ```
 
-## Testes
+## Testes e lint
 
 ```bash
 cd server
-npm test
-```
+npm test    # Vitest — validação de CPF e do schema de cadastro
+npm run lint
 
-Cobrem a validação de CPF (dígito verificador) e as regras do schema de
-cadastro (e-mail, nome, cor, observações).
+cd ../web
+npm run lint
+```
 
 ## API
 
-Documentação interativa (Swagger UI): `http://localhost:3333/docs`
-Especificação OpenAPI em JSON: `http://localhost:3333/openapi.json`
+A especificação completa (rotas, payloads, exemplos, códigos de erro) é
+servida pela própria API, gerada a partir do código — é sempre a versão
+atual:
 
-| Método | Rota            | Descrição |
-|--------|-----------------|-----------|
-| GET    | `/health`       | Healthcheck |
-| GET    | `/docs`         | Swagger UI |
-| GET    | `/api/colors`   | Lista as cores disponíveis para o formulário |
-| GET    | `/api/clients`  | Lista os clientes cadastrados (mais recentes primeiro) |
-| POST   | `/api/clients`  | Cria um cadastro de cliente |
+- Swagger UI: `http://localhost:3333/docs`
+- OpenAPI JSON: `http://localhost:3333/openapi.json`
 
-> **Atenção:** `GET /api/clients` não tem autenticação neste escopo (o teste
-> não pediu área administrativa) e expõe dados pessoais (CPF, e-mail). Antes
-> de expor essa rota publicamente em produção, adicione autenticação.
+Resumo das rotas:
 
-## Segurança (formulário público)
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET | `/health` | Healthcheck |
+| GET | `/api/colors` | Cores disponíveis para o formulário |
+| GET | `/api/clients` | Lista os cadastros (mais recentes primeiro) |
+| POST | `/api/clients` | Cria um cadastro (`409` se CPF/e-mail já existir) |
 
-Mesmo sem exigir login do cliente final, o `POST /api/clients` tem duas
-camadas de proteção contra abuso:
+`GET /api/clients` não tem autenticação nesta versão — o teste não pediu
+área administrativa, então essa rota fica sem proteção além do rate limit.
+Não deve ir para produção exposta assim sem autenticação.
 
-- **Rate limiting** por IP: 5 tentativas de cadastro a cada 15 minutos
-  (`GET /api/clients` tem limite mais permissivo, 30/15min). Ao estourar,
-  a API responde `429` com `Retry-After` nos headers.
-- **Honeypot**: o formulário envia um campo `website`, invisível para
-  pessoas reais (escondido via CSS, fora da ordem de tabulação). Bots que
-  preenchem tudo automaticamente costumam preencher esse campo também — se
-  vier preenchido, a API responde `201` de forma "normal" mas **não grava
-  nada no banco**, para não ensinar o bot a evitar o campo.
+## Segurança do formulário público
 
-Nenhuma das duas exige CAPTCHA nem afeta a experiência de quem preenche o
-formulário normalmente.
+Sem exigir login de quem preenche, o `POST /api/clients` tem duas camadas
+contra abuso:
 
-`POST /api/clients` — corpo esperado:
+- **Rate limiting por IP**: 5 tentativas de cadastro a cada 15 minutos
+  (`GET /api/clients`, 30/15min). Estourar o limite retorna `429`.
+- **Honeypot**: o formulário manda um campo `website`, invisível para gente
+  de verdade (fora da ordem de tabulação, escondido via CSS, não via
+  `display: none` — isso engana bots com mais frequência). Se vier
+  preenchido, a API responde `201` normalmente mas não grava nada — assim o
+  bot não aprende a evitar o campo.
 
-```json
-{
-  "fullName": "Maria da Silva",
-  "cpf": "111.444.777-35",
-  "email": "maria@example.com",
-  "colorId": "<uuid retornado por GET /api/colors>",
-  "notes": "opcional"
-}
-```
+Nenhuma das duas exige CAPTCHA nem atrapalha quem está preenchendo de
+verdade.
 
-Respostas: `201` (criado), `400` (dados inválidos), `409` (CPF ou e-mail já
-cadastrado — um cliente só pode se cadastrar uma vez).
+## Decisões de projeto (resumo)
 
-## Decisões técnicas (resumo)
+- **Cores como dado, não constante do frontend** — o cliente avisou que a
+  lista pode mudar; troca de cor não pede novo deploy do front.
+- **Unicidade por CPF/e-mail** para garantir "um cadastro por cliente" sem
+  exigir login.
+- **Migrations do Prisma versionadas** para outra equipe reproduzir o banco
+  com um comando (`prisma migrate deploy`).
 
-- **Cores como dado, não como constante no front-end**: o próprio cliente
-  avisou que a lista de cores pode mudar. Elas ficam em uma tabela
-  (`colors`) e são carregadas via API, então adicionar/remover uma cor não
-  exige novo deploy do frontend.
-- **Unicidade do cadastro por CPF/e-mail**: como o formulário é público e
-  sem autenticação, "cadastrar uma única vez" foi implementado como
-  restrição de unicidade no banco (CPF e e-mail), retornando `409` em caso
-  de duplicidade.
-- **Prisma + migrations versionadas**: para que a próxima equipe consiga
-  reproduzir o schema do banco em qualquer ambiente com um único comando
-  (`prisma migrate deploy`).
+Racional completo em [`docs/SPEC.md`](docs/SPEC.md).
 
-Mais detalhes e premissas assumidas em [`docs/SPEC.md`](docs/SPEC.md).
+## Próximos passos
 
-## Próximos passos (fora do escopo deste entregável)
+Fora do escopo deste entregável, mas próximo natural do projeto:
 
-- Painel administrativo para o John Doe consultar os cadastros.
-- Autenticação, caso o painel acima seja implementado.
+- Painel administrativo para consultar os cadastros (e autenticação nele).
 - Confirmação por e-mail do cadastro.
-- CI (lint + testes) e pipeline de deploy automatizado.
+- CI (lint + testes) no pipeline de deploy.
