@@ -17,6 +17,12 @@ inatividade e o primeiro request pode demorar ~30s para acordar), banco
 Postgres na Neon (via Vercel Marketplace). Deploy automático a cada push na
 `main`.
 
+### Prints
+
+| Formulário | Cadastro concluído |
+|---|---|
+| ![Formulário de cadastro preenchido](docs/screenshots/form.png) | ![Tela de confirmação de cadastro](docs/screenshots/success.png) |
+
 ## Stack
 
 | Camada   | Tecnologias |
