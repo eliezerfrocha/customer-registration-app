@@ -2,6 +2,8 @@ import { FormEvent, useState } from "react";
 import { useColors } from "../hooks/useColors";
 import { ApiError, registerClient } from "../services/api";
 import { maskCpf } from "../utils/cpfMask";
+import { ColorPicker } from "./ColorPicker";
+import { AlertCircleIcon, CheckCircleIcon } from "./icons";
 
 interface FormState {
   fullName: string;
@@ -30,7 +32,8 @@ export function ClientRegistrationForm() {
   const [form, setForm] = useState<FormState>(initialState);
   const [status, setStatus] = useState<SubmissionStatus>({ type: "idle" });
 
-  const isSubmitted = status.type === "success";
+  const isSubmitting = status.type === "submitting";
+  const selectedColor = colors.find((color) => color.id === form.colorId);
 
   function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -58,10 +61,33 @@ export function ClientRegistrationForm() {
     }
   }
 
-  if (isSubmitted) {
+  if (status.type === "success") {
     return (
-      <div className="feedback success" role="status">
-        Cadastro realizado com sucesso! Obrigado, {form.fullName.split(" ")[0]}.
+      <div className="result-card success" role="status">
+        <div className="result-icon success">
+          <CheckCircleIcon />
+        </div>
+        <h2>Cadastro realizado!</h2>
+        <p>
+          Obrigado, <strong>{form.fullName.split(" ")[0]}</strong>. Seus dados foram salvos com
+          sucesso.
+        </p>
+        {selectedColor && (
+          <div className="result-color">
+            <span className="color-preview-dot" style={{ backgroundColor: selectedColor.hexCode }} />
+            Cor preferida: <strong>{selectedColor.name}</strong>
+          </div>
+        )}
+        <button
+          type="button"
+          className="secondary-button"
+          onClick={() => {
+            setForm(initialState);
+            setStatus({ type: "idle" });
+          }}
+        >
+          Cadastrar outro cliente
+        </button>
       </div>
     );
   }
@@ -76,7 +102,7 @@ export function ClientRegistrationForm() {
           minLength={3}
           value={form.fullName}
           onChange={(e) => updateField("fullName", e.target.value)}
-          disabled={status.type === "submitting"}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -89,7 +115,7 @@ export function ClientRegistrationForm() {
           placeholder="000.000.000-00"
           value={form.cpf}
           onChange={(e) => updateField("cpf", maskCpf(e.target.value))}
-          disabled={status.type === "submitting"}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -101,28 +127,19 @@ export function ClientRegistrationForm() {
           required
           value={form.email}
           onChange={(e) => updateField("email", e.target.value)}
-          disabled={status.type === "submitting"}
+          disabled={isSubmitting}
         />
       </div>
 
       <div className="field">
-        <label htmlFor="colorId">Cor preferida</label>
-        <select
-          id="colorId"
-          required
+        <label>Cor preferida</label>
+        <ColorPicker
+          colors={colors}
           value={form.colorId}
-          onChange={(e) => updateField("colorId", e.target.value)}
-          disabled={status.type === "submitting" || isLoadingColors}
-        >
-          <option value="" disabled>
-            {isLoadingColors ? "Carregando cores..." : "Selecione uma cor"}
-          </option>
-          {colors.map((color) => (
-            <option key={color.id} value={color.id}>
-              {color.name}
-            </option>
-          ))}
-        </select>
+          onChange={(colorId) => updateField("colorId", colorId)}
+          disabled={isSubmitting}
+          isLoading={isLoadingColors}
+        />
       </div>
 
       <div className="field">
@@ -131,17 +148,18 @@ export function ClientRegistrationForm() {
           id="notes"
           value={form.notes}
           onChange={(e) => updateField("notes", e.target.value)}
-          disabled={status.type === "submitting"}
+          disabled={isSubmitting}
         />
       </div>
 
-      <button type="submit" disabled={status.type === "submitting"}>
-        {status.type === "submitting" ? "Enviando..." : "Enviar cadastro"}
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Enviando..." : "Enviar cadastro"}
       </button>
 
       {status.type === "error" && (
         <div className="feedback error" role="alert">
-          {status.message}
+          <AlertCircleIcon />
+          <span>{status.message}</span>
         </div>
       )}
     </form>
