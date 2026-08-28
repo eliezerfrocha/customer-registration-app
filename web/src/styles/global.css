@@ -30,6 +30,21 @@ body {
   padding: 36px 32px 32px;
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.1);
   overflow: hidden;
+  animation: card-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.field {
+  animation: field-enter 0.4s ease both;
+}
+
+.field:nth-child(1) { animation-delay: 0.02s; }
+.field:nth-child(2) { animation-delay: 0.06s; }
+.field:nth-child(3) { animation-delay: 0.1s; }
+.field:nth-child(4) { animation-delay: 0.14s; }
+.field:nth-child(5) { animation-delay: 0.18s; }
+
+form.shake {
+  animation: shake 0.4s ease;
 }
 
 .card-accent {
@@ -73,6 +88,26 @@ label {
   font-size: 0.875rem;
   font-weight: 600;
   color: #374151;
+}
+
+.required-mark {
+  color: #dc2626;
+}
+
+.field-error {
+  font-size: 0.8rem;
+  color: #dc2626;
+  animation: field-error-enter 0.2s ease both;
+}
+
+input.invalid,
+textarea.invalid {
+  border-color: #dc2626;
+}
+
+input.invalid:focus,
+textarea.invalid:focus {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15);
 }
 
 input,
@@ -130,11 +165,21 @@ textarea {
   border: 1.5px solid #e5e7eb;
   background: #fff;
   cursor: pointer;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease,
+    transform 0.15s ease;
 }
 
 .color-swatch:hover {
   border-color: var(--swatch-color);
+  transform: translateY(-1px);
+}
+
+.color-swatch:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.color-swatch.selected {
+  animation: swatch-pop 0.3s ease;
 }
 
 .color-swatch input {
@@ -218,10 +263,13 @@ button[type="submit"] {
 
 button[type="submit"]:hover:not(:disabled) {
   background: #4338ca;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
 }
 
 button[type="submit"]:active:not(:disabled) {
-  transform: scale(0.99);
+  transform: scale(0.98) translateY(0);
+  box-shadow: none;
 }
 
 button[type="submit"]:disabled {
@@ -283,6 +331,11 @@ button[type="submit"]:disabled {
 
 .result-icon.success {
   color: #059669;
+  animation: pop-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.card-pop {
+  animation: card-enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .result-card h2 {
@@ -308,4 +361,125 @@ button[type="submit"]:disabled {
   background: #f3f4f6;
   font-size: 0.85rem;
   color: #374151;
+}
+
+/* Animations */
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes field-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes field-error-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+@keyframes swatch-pop {
+  0% { transform: scale(0.92); }
+  60% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Responsive */
+@media (max-width: 560px) {
+  .page {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  .card {
+    max-width: 100%;
+    padding: 28px 20px 24px;
+    border-radius: 14px;
+    margin-top: 12px;
+  }
+
+  .card h1 {
+    font-size: 1.35rem;
+  }
+
+  .card p.subtitle {
+    font-size: 0.875rem;
+    margin-bottom: 22px;
+  }
+
+  .color-swatch {
+    padding: 9px 14px 9px 10px;
+  }
+
+  .color-swatch-name {
+    font-size: 0.9rem;
+  }
+
+  input,
+  select,
+  textarea,
+  button[type="submit"],
+  .secondary-button {
+    font-size: 16px; /* evita zoom automático em iOS ao focar */
+  }
+}
+
+@media (max-width: 360px) {
+  .card {
+    padding: 22px 16px 20px;
+  }
+
+  .color-grid {
+    gap: 6px;
+  }
 }
