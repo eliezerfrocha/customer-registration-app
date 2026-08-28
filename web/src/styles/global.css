@@ -40,9 +40,17 @@ body {
   background: #ffffff;
   border-radius: 16px;
   padding: 36px 32px 32px;
+  border: 2px solid transparent;
   box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
   overflow: hidden;
   animation: card-enter 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transition: border-color 0.4s ease, box-shadow 0.4s ease;
+}
+
+.card.has-accent {
+  border-color: var(--accent-color);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12),
+    0 0 0 4px color-mix(in srgb, var(--accent-color) 15%, transparent);
 }
 
 .card h1 {
@@ -141,6 +149,15 @@ textarea {
   min-height: 80px;
 }
 
+.color-feedback {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+  color: #6b7280;
+  animation: field-error-enter 0.2s ease both;
+}
+
 /* Color dot (used in the select and the success chip) */
 .color-dot {
   width: 14px;
@@ -207,11 +224,8 @@ textarea {
 }
 
 .select-panel {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  position: fixed;
+  z-index: 100;
   margin: 0;
   padding: 6px;
   list-style: none;

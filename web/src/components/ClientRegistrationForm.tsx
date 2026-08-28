@@ -1,6 +1,7 @@
 import { FormEvent, useRef, useState } from "react";
 import { useColors } from "../hooks/useColors";
 import { ApiError, registerClient } from "../services/api";
+import { Color } from "../types";
 import { maskCpf } from "../utils/cpfMask";
 import { ClientFormErrors, ClientFormValues, validateClientForm } from "../utils/validation";
 import { ColorSelect } from "./ColorSelect";
@@ -20,7 +21,11 @@ type SubmissionStatus =
   | { type: "success" }
   | { type: "error"; message: string };
 
-export function ClientRegistrationForm() {
+interface ClientRegistrationFormProps {
+  onColorPreview?: (color: Color | undefined) => void;
+}
+
+export function ClientRegistrationForm({ onColorPreview }: ClientRegistrationFormProps) {
   const { colors, isLoading: isLoadingColors } = useColors();
   const [form, setForm] = useState<ClientFormValues>(initialState);
   const [fieldErrors, setFieldErrors] = useState<ClientFormErrors>({});
@@ -113,6 +118,7 @@ export function ClientRegistrationForm() {
             setForm(initialState);
             setFieldErrors({});
             setStatus({ type: "idle" });
+            onColorPreview?.(undefined);
           }}
         >
           Cadastrar outro cliente
@@ -200,16 +206,26 @@ export function ClientRegistrationForm() {
             id="colorId"
             colors={colors}
             value={form.colorId}
-            onChange={(colorId) => updateField("colorId", colorId)}
+            onChange={(colorId) => {
+              updateField("colorId", colorId);
+              onColorPreview?.(colors.find((color) => color.id === colorId));
+            }}
             disabled={isSubmitting}
             isLoading={isLoadingColors}
             invalid={Boolean(fieldErrors.colorId)}
             describedBy={fieldErrors.colorId ? "colorId-error" : undefined}
           />
-          {fieldErrors.colorId && (
+          {fieldErrors.colorId ? (
             <span className="field-error" id="colorId-error">
               {fieldErrors.colorId}
             </span>
+          ) : (
+            selectedColor && (
+              <span className="color-feedback">
+                <span className="color-dot" style={{ backgroundColor: selectedColor.hexCode }} />
+                Cor selecionada: <strong>{selectedColor.name}</strong>
+              </span>
+            )
           )}
         </div>
 

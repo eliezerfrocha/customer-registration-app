@@ -1,4 +1,5 @@
-import { KeyboardEvent, useEffect, useRef, useState } from "react";
+import { CSSProperties, KeyboardEvent, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Color } from "../types";
 import { ChevronDownIcon } from "./icons";
 
@@ -25,7 +26,9 @@ export function ColorSelect({
 }: ColorSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [panelStyle, setPanelStyle] = useState<CSSProperties>({});
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
   const selectedIndex = colors.findIndex((color) => color.id === value);
@@ -33,7 +36,12 @@ export function ColorSelect({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      if (
+        rootRef.current &&
+        !rootRef.current.contains(target) &&
+        !listRef.current?.contains(target)
+      ) {
         setIsOpen(false);
       }
     }
@@ -42,13 +50,29 @@ export function ColorSelect({
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
-      setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
-      listRef.current?.focus();
-      listRef.current
-        ?.querySelector<HTMLElement>('[data-active="true"]')
-        ?.scrollIntoView({ block: "nearest" });
+    if (!isOpen) return;
+
+    function updatePosition() {
+      const rect = triggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setPanelStyle({
+        position: "fixed",
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: rect.width,
+      });
     }
+
+    updatePosition();
+    setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    listRef.current?.focus();
+
+    window.addEventListener("resize", updatePosition);
+    window.addEventListener("scroll", updatePosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePosition);
+      window.removeEventListener("scroll", updatePosition, true);
+    };
   }, [isOpen, selectedIndex]);
 
   function openList() {
@@ -59,6 +83,7 @@ export function ColorSelect({
   function selectColor(color: Color) {
     onChange(color.id);
     setIsOpen(false);
+    triggerRef.current?.focus();
   }
 
   function handleTriggerKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
@@ -86,6 +111,7 @@ export function ColorSelect({
       case "Escape":
         event.preventDefault();
         setIsOpen(false);
+        triggerRef.current?.focus();
         break;
     }
   }
@@ -95,6 +121,7 @@ export function ColorSelect({
       <button
         type="button"
         id={id}
+        ref={triggerRef}
         className={`select-trigger${invalid ? " invalid" : ""}`}
         role="combobox"
         aria-haspopup="listbox"
@@ -121,32 +148,35 @@ export function ColorSelect({
         <ChevronDownIcon />
       </button>
 
-      {isOpen && (
-        <ul
-          className="select-panel"
-          role="listbox"
-          tabIndex={-1}
-          onKeyDown={handleListKeyDown}
-          ref={listRef}
-        >
-          {colors.map((color, index) => (
-            <li
-              key={color.id}
-              role="option"
-              aria-selected={color.id === value}
-              data-active={index === activeIndex}
-              className={`select-option${index === activeIndex ? " active" : ""}${
-                color.id === value ? " selected" : ""
-              }`}
-              onMouseEnter={() => setActiveIndex(index)}
-              onClick={() => selectColor(color)}
-            >
-              <span className="color-dot" style={{ backgroundColor: color.hexCode }} />
-              {color.name}
-            </li>
-          ))}
-        </ul>
-      )}
+      {isOpen &&
+        createPortal(
+          <ul
+            className="select-panel"
+            style={panelStyle}
+            role="listbox"
+            tabIndex={-1}
+            onKeyDown={handleListKeyDown}
+            ref={listRef}
+          >
+            {colors.map((color, index) => (
+              <li
+                key={color.id}
+                role="option"
+                aria-selected={color.id === value}
+                data-active={index === activeIndex}
+                className={`select-option${index === activeIndex ? " active" : ""}${
+                  color.id === value ? " selected" : ""
+                }`}
+                onMouseEnter={() => setActiveIndex(index)}
+                onClick={() => selectColor(color)}
+              >
+                <span className="color-dot" style={{ backgroundColor: color.hexCode }} />
+                {color.name}
+              </li>
+            ))}
+          </ul>,
+          document.body,
+        )}
     </div>
   );
 }
