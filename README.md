@@ -10,7 +10,7 @@ CPF, por que as cores vêm do banco, etc.) estão em [`docs/SPEC.md`](docs/SPEC.
 ## Deploy
 
 - **App**: https://customer-registration-web.vercel.app
-- **API**: https://customer-registration-api-ze3r.onrender.com (`/docs` para a documentação interativa)
+- **API**: https://customer-registration-api-ze3r.onrender.com/docs (documentação interativa Swagger)
 
 Frontend no Vercel, API no Render (plano free — o serviço "dorme" após
 inatividade e o primeiro request pode demorar ~30s para acordar), banco
